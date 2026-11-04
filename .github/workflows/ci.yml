@@ -1,0 +1,53 @@
+
+# CS3616 Week 4 lab — GitHub Actions CI pipeline
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Stage 1: lint
+  ruff-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - run: ruff check src/ tests/
+
+  ruff-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - run: ruff format --check src/ tests/
+
+  # Stage 2: typecheck
+  mypy:
+    needs: [ruff-check, ruff-format]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - run: mypy src/
+
+  # Stage 3: test
+  pytest:
+    needs: [mypy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - run: pytest tests/ --cov=src --cov-branch --cov-report=term-missing -q
